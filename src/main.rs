@@ -38,11 +38,10 @@ fn test_run_pipeline() {
     let (gen_chan, gen_port) = channel();
     let merge_chan = merge(results_chan);
     {
-
         let mut square_workers: VecDeque<Sender<u8>> = vec![square(merge_chan.clone()),
-                                                        square(merge_chan)]
-                                                        .into_iter()
-                                                        .collect();
+                                                            square(merge_chan)]
+                                                           .into_iter()
+                                                           .collect();
         generate(numbers, gen_chan);
         for num in gen_port {
             let worker = square_workers.pop_front().unwrap();
