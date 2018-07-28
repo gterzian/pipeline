@@ -14,7 +14,7 @@ fn generate(numbers: Vec<u8>, num_chan: Sender<u8>) {
 fn square(result_chan: Sender<u8>) -> Sender<u8> {
     let (chan, port) = channel();
     let _ = thread::Builder::new().spawn(move || {
-        for num in port.iter() {
+        for num in port {
             let _ = result_chan.send(num * num);
         }
     });
@@ -24,7 +24,7 @@ fn square(result_chan: Sender<u8>) -> Sender<u8> {
 fn merge(merged_result_chan: Sender<u8>) -> Sender<u8> {
     let (chan, port) = channel();
     let _ = thread::Builder::new().spawn(move || {
-        for squared in port.iter() {
+        for squared in port {
             let _ = merged_result_chan.send(squared);
         }
     });
@@ -44,7 +44,7 @@ fn test_run_pipeline() {
                                                         .into_iter()
                                                         .collect();
         generate(numbers, gen_chan);
-        for num in gen_port.iter() {
+        for num in gen_port {
             let worker = square_workers.pop_front().unwrap();
             let _ = worker.send(num);
             square_workers.push_back(worker);
