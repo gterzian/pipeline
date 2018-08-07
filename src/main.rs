@@ -3,10 +3,11 @@ use std::sync::mpsc::{Sender, channel};
 use std::thread;
 
 
-fn generate(numbers: Vec<u8>, num_chan: Sender<u8>) {
+fn generate(num_chan: Sender<u8>) {
+    let mut num = 2;
     let _ = thread::Builder::new().spawn(move || {
-        for num in numbers {
-            let _ = num_chan.send(num);
+        while let Ok(_) = num_chan.send(num) {
+            num = num + 1;
         }
     });
 }
@@ -34,7 +35,6 @@ fn merge(merged_result_chan: Sender<u8>) -> Sender<u8> {
 #[test]
 fn test_run_pipeline() {
     let (results_chan, results_port) = channel();
-    let numbers = vec![2, 3];
     let (gen_chan, gen_port) = channel();
     let merge_chan = merge(results_chan);
     {
@@ -42,16 +42,18 @@ fn test_run_pipeline() {
                                                             square(merge_chan)]
                                                            .into_iter()
                                                            .collect();
-        generate(numbers, gen_chan);
+        generate(gen_chan);
         for num in gen_port {
             let worker = square_workers.pop_front().unwrap();
             let _ = worker.send(num);
             square_workers.push_back(worker);
+            if num == 3 {
+                // Dropping the gen_chan, stopping the generator.
+                break;
+            }
         }
     }
-    let mut results = results_port.iter();
-    // Two Some, followed by one None.
-    assert!(results.next().is_some());
-    assert!(results.next().is_some());
-    assert!(results.next().is_none());
+    for _result in results_port {
+        // receiving results...
+    }
 }
